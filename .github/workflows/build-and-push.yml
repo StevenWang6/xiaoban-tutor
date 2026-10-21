@@ -1,0 +1,48 @@
+name: build-and-push
+
+# 在云端（GitHub Actions）构建 Docker 镜像并推送到镜像仓库。
+# 不依赖本机 Docker，解决了本地 WSL2 未安装导致 Docker 无法启动的问题。
+#
+# 使用前需要在 GitHub 仓库 Settings → Secrets and variables → Actions 中配置：
+#   REGISTRY           镜像仓库登录地址（仅域名，例如 sealos 的 registry 地址）
+#   REGISTRY_USERNAME  仓库登录用户名
+#   REGISTRY_PASSWORD  仓库登录密码 / token
+#   IMAGE_NAME         镜像名（不含 registry 前缀与 tag，例如 命名空间/xiaoban-tutor）
+#
+# 完整镜像地址会形如：<REGISTRY>/<IMAGE_NAME>:latest
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.REGISTRY }}/${{ secrets.IMAGE_NAME }}:latest
+            ${{ secrets.REGISTRY }}/${{ secrets.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
