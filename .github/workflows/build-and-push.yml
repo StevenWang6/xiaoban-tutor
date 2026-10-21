@@ -39,12 +39,3 @@ jobs:
             ghcr.io/stevenwang6/xiaoban-tutor:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Make image public
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api --method PATCH \
-            -H "Accept: application/vnd.github+json" \
-            /user/packages/container/xiaoban-tutor/visibility \
-            -f visibility=public
