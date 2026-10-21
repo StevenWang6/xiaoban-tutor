@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小伴 - AI 家庭教师</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      color: #203047;
+      background: #f3f6fb;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; min-height: 100vh; }
+    button, input, textarea { font: inherit; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      background: #4169e1;
+      cursor: pointer;
+      transition: background .15s ease, transform .15s ease;
+    }
+    button:hover { background: #3155c8; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: .6; cursor: wait; }
+    button.secondary { color: #34445d; background: #e9eef7; }
+    button.secondary:hover { background: #dce5f3; }
+    .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); min-height: 100vh; }
+    aside { padding: 25px 20px; background: #fff; border-right: 1px solid #e5eaf2; }
+    .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 25px; }
+    .brand-icon { display: grid; place-items: center; width: 43px; height: 43px; border-radius: 14px; background: #e7edff; font-size: 23px; }
+    h1 { margin: 0; font-size: 21px; }
+    .subtitle { margin: 4px 0 0; color: #76849a; font-size: 13px; }
+    .profile { padding-top: 18px; border-top: 1px solid #edf0f5; }
+    .profile h2 { margin: 0 0 15px; font-size: 15px; }
+    label { display: block; margin-bottom: 13px; color: #526078; font-size: 13px; }
+    input[type="text"], textarea {
+      width: 100%;
+      margin-top: 6px;
+      border: 1px solid #dce3ed;
+      border-radius: 9px;
+      padding: 10px 11px;
+      color: #203047;
+      background: #fbfcfe;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color: #7894ea; box-shadow: 0 0 0 3px #4169e11a; }
+    main { display: flex; flex-direction: column; min-width: 0; max-height: 100vh; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 26px; border-bottom: 1px solid #e5eaf2; background: #fff; }
+    .topbar p { margin: 0; color: #738198; font-size: 13px; }
+    .chat { flex: 1; overflow-y: auto; padding: 26px max(22px, calc((100% - 850px) / 2)); }
+    .welcome { max-width: 680px; margin: 10vh auto 30px; text-align: center; }
+    .welcome .emoji { font-size: 44px; }
+    .welcome h2 { margin: 10px 0; font-size: 25px; }
+    .welcome p { color: #6f7d92; line-height: 1.7; }
+    .suggestions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .suggestions button { font-size: 13px; }
+    .message { display: flex; gap: 11px; max-width: 780px; margin: 0 auto 18px; }
+    .message.user { flex-direction: row-reverse; }
+    .avatar { flex: 0 0 34px; display: grid; place-items: center; height: 34px; border-radius: 12px; background: #e7edff; }
+    .message.user .avatar { background: #dff4eb; }
+    .bubble { max-width: min(690px, calc(100% - 45px)); border-radius: 5px 16px 16px; padding: 13px 16px; background: #fff; box-shadow: 0 2px 9px #30415a0b; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .message.user .bubble { border-radius: 16px 5px 16px 16px; background: #e9f0ff; }
+    .bubble img { display: block; max-width: min(360px, 100%); max-height: 250px; margin-top: 10px; border-radius: 9px; }
+    .composer-wrap { padding: 15px 22px 20px; border-top: 1px solid #e5eaf2; background: #fff; }
+    .composer-inner { max-width: 850px; margin: auto; }
+    .stage { position: relative; display: flex; justify-content: center; margin: 0 0 12px; }
+    .stage[hidden] { display: none; }
+    .stage-media { display: block; max-width: 100%; max-height: 390px; border-radius: 8px; background: #101827; }
+    #annotation { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+    .stage-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 10px; }
+    .stage-actions[hidden] { display: none; }
+    .stage-actions button { padding: 8px 11px; font-size: 13px; }
+    .toolbar { display: flex; align-items: flex-end; gap: 9px; }
+    #messageInput { min-height: 48px; max-height: 150px; resize: vertical; margin: 0; }
+    .toolbar button { flex: 0 0 auto; height: 46px; }
+    .hint { margin: 8px 2px 0; color: #8995a8; font-size: 12px; }
+    .status { min-height: 18px; margin: 8px 2px 0; color: #b24848; font-size: 13px; }
+    .loading { color: #738198; font-style: italic; }
+    @media (max-width: 760px) {
+      .layout { display: block; }
+      aside { padding: 13px 16px; border-right: 0; border-bottom: 1px solid #e5eaf2; }
+      .brand { margin-bottom: 12px; }
+      .profile { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 11px; }
+      .profile h2 { grid-column: 1 / -1; margin-bottom: 0; }
+      label { margin: 0; }
+      main { max-height: calc(100vh - 165px); min-height: 500px; }
+      .chat { padding: 18px 13px; }
+      .composer-wrap { padding: 12px; }
+      .toolbar { flex-wrap: wrap; }
+      #messageInput { flex: 1 1 100%; }
+      .hint { line-height: 1.5; }
+    }
+    @media (max-width: 460px) {
+      .profile { grid-template-columns: 1fr; }
+      main { max-height: none; min-height: calc(100vh - 300px); }
+      .topbar { padding: 12px 15px; }
+      .topbar p { max-width: 58%; text-align: right; }
+      .toolbar button { padding: 9px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">🌱</div>
+        <div>
+          <h1>小伴 · 家庭教师</h1>
+          <p class="subtitle">一起理解，一起进步</p>
+        </div>
+      </div>
+      <section class="profile" aria-labelledby="profileHeading">
+        <h2 id="profileHeading">学习档案</h2>
+        <label>年级
+          <input id="grade" type="text" maxlength="80" placeholder="例如：初一">
+        </label>
+        <label>学习科目
+          <input id="subjects" type="text" maxlength="120" placeholder="例如：数学、英语">
+        </label>
+        <label>近期目标
+          <input id="goal" type="text" maxlength="240" placeholder="例如：弄懂一次函数">
+        </label>
+      </section>
+    </aside>
+    <main>
+      <header class="topbar">
+        <button id="newChat" class="secondary" type="button">新对话</button>
+        <p>耐心引导 · 作业督导 · 查漏补缺 · 学习习惯</p>
+      </header>
+      <section id="chat" class="chat" aria-live="polite">
+        <div id="welcome" class="welcome">
+          <div class="emoji" aria-hidden="true">📚</div>
+          <h2>你好，今天想学点什么？</h2>
+          <p>我会先陪你理清思路，再一步步找到答案。可以打字、说话，也可以拍下题目或分享屏幕。</p>
+          <div class="suggestions">
+            <button class="secondary suggestion" type="button">帮我拆分今天的作业</button>
+            <button class="secondary suggestion" type="button">用简单的话讲讲光合作用</button>
+            <button class="secondary suggestion" type="button">考考我最近学的知识</button>
+          </div>
+        </div>
+      </section>
+      <section class="composer-wrap" aria-label="发送学习问题">
+        <div class="composer-inner">
+          <div id="stage" class="stage" hidden>
+            <img id="previewImage" class="stage-media" alt="待发送的学习图片" hidden>
+            <video id="previewVideo" class="stage-media" autoplay muted playsinline hidden></video>
+            <canvas id="annotation" aria-label="在图片上拖动以添加批注"></canvas>
+          </div>
+          <div id="stageActions" class="stage-actions" hidden>
+            <button id="captureScreen" class="secondary" type="button" hidden>截取当前屏幕并批注</button>
+            <button id="clearAnnotation" class="secondary" type="button">清除批注</button>
+            <button id="removeMedia" class="secondary" type="button">移除图片</button>
+          </div>
+          <div class="toolbar">
+            <input id="imageInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+            <button id="chooseImage" class="secondary" type="button" title="上传题目照片">📷 图片</button>
+            <button id="shareScreen" class="secondary" type="button" title="选择一个窗口或屏幕">🖥️ 屏幕</button>
+            <button id="voiceInput" class="secondary" type="button" title="语音输入">🎙️ 语音</button>
+            <textarea id="messageInput" rows="1" placeholder="说说你遇到的困难，或试着描述一下你的思路…"></textarea>
+            <button id="sendButton" type="button">发送</button>
+          </div>
+          <p class="hint">语音功能需要浏览器支持并允许麦克风；屏幕共享需使用 localhost 或 HTTPS。图片仅在发送问题时上传给 DeepSeek。</p>
+          <p id="status" class="status" role="status"></p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    const chat = document.getElementById("chat");
+    const welcome = document.getElementById("welcome");
+    const messageInput = document.getElementById("messageInput");
+    const statusLine = document.getElementById("status");
+    const imageInput = document.getElementById("imageInput");
+    const stage = document.getElementById("stage");
+    const stageActions = document.getElementById("stageActions");
+    const previewImage = document.getElementById("previewImage");
+    const previewVideo = document.getElementById("previewVideo");
+    const annotation = document.getElementById("annotation");
+    const drawing = annotation.getContext("2d");
+    const history = [];
+    let pendingImage = "";
+    let mediaStream = null;
+    let recognition = null;
+    let drawingPointer = null;
+
+    const fields = {
+      grade: document.getElementById("grade"),
+      subjects: document.getElementById("subjects"),
+      goal: document.getElementById("goal")
+    };
+    try {
+      const saved = JSON.parse(localStorage.getItem("tutorProfile") || "{}");
+      for (const [key, field] of Object.entries(fields)) field.value = saved[key] || "";
+    } catch {
+      localStorage.removeItem("tutorProfile");
+    }
+    for (const field of Object.values(fields)) {
+      field.addEventListener("input", () => {
+        localStorage.setItem("tutorProfile", JSON.stringify({
+          grade: fields.grade.value,
+          subjects: fields.subjects.value,
+          goal: fields.goal.value
+        }));
+      });
+    }
+
+    function setStatus(message = "") {
+      statusLine.textContent = message;
+    }
+
+    function addMessage(role, text, imageUrl = "") {
+      welcome.hidden = true;
+      const row = document.createElement("div");
+      row.className = `message ${role}`;
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = role === "user" ? "🙂" : "🌱";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = text;
+      if (imageUrl) {
+        const image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = "本次提问附带的图片";
+        bubble.append(image);
+      }
+      row.append(avatar, bubble);
+      chat.append(row);
+      chat.scrollTop = chat.scrollHeight;
+      return bubble;
+    }
+
+    function configureAnnotation(width, height) {
+      annotation.width = width;
+      annotation.height = height;
+      drawing.lineWidth = Math.max(3, width / 300);
+      drawing.lineCap = "round";
+      drawing.lineJoin = "round";
+      drawing.strokeStyle = "#f04444";
+      stage.hidden = false;
+      stageActions.hidden = false;
+    }
+
+    function hideStage() {
+      stopScreenShare();
+      pendingImage = "";
+      stage.hidden = true;
+      stageActions.hidden = true;
+      previewImage.hidden = true;
+      previewVideo.hidden = true;
+      previewImage.removeAttribute("src");
+      drawing.clearRect(0, 0, annotation.width, annotation.height);
+    }
+
+    function stopScreenShare() {
+      if (mediaStream) {
+        for (const track of mediaStream.getTracks()) track.stop();
+        mediaStream = null;
+      }
+      previewVideo.srcObject = null;
+      document.getElementById("captureScreen").hidden = true;
+      document.getElementById("shareScreen").textContent = "🖥️ 屏幕";
+    }
+
+    async function prepareImage(file) {
+      if (!file || !file.type.startsWith("image/")) {
+        throw new Error("请选择有效的图片文件。");
+      }
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      return canvas.toDataURL("image/jpeg", 0.82);
+    }
+
+    function loadImage(dataUrl) {
+      stopScreenShare();
+      pendingImage = dataUrl;
+      previewVideo.hidden = true;
+      previewImage.hidden = false;
+      previewImage.onload = () => {
+        configureAnnotation(previewImage.naturalWidth, previewImage.naturalHeight);
+        drawing.clearRect(0, 0, annotation.width, annotation.height);
+      };
+      previewImage.src = dataUrl;
+    }
+
+    function currentMediaSize() {
+      if (!previewVideo.hidden) {
+        return { width: previewVideo.videoWidth, height: previewVideo.videoHeight, source: previewVideo };
+      }
+      return {
+        width: previewImage.naturalWidth,
+        height: previewImage.naturalHeight,
+        source: previewImage
+      };
+    }
+
+    function composeImage() {
+      const media = currentMediaSize();
+      if (!media.width || !media.height) throw new Error("图片或屏幕画面尚未准备好。");
+      const output = document.createElement("canvas");
+      const scale = Math.min(1, 1600 / Math.max(media.width, media.height));
+      output.width = Math.round(media.width * scale);
+      output.height = Math.round(media.height * scale);
+      const context = output.getContext("2d");
+      context.drawImage(media.source, 0, 0, output.width, output.height);
+      context.drawImage(annotation, 0, 0, output.width, output.height);
+      return output.toDataURL("image/jpeg", 0.82);
+    }
+
+    annotation.addEventListener("pointerdown", event => {
+      if (stage.hidden) return;
+      const bounds = annotation.getBoundingClientRect();
+      const x = (event.clientX - bounds.left) * annotation.width / bounds.width;
+      const y = (event.clientY - bounds.top) * annotation.height / bounds.height;
+      drawingPointer = event.pointerId;
+      annotation.setPointerCapture(event.pointerId);
+      drawing.beginPath();
+      drawing.moveTo(x, y);
+    });
+    annotation.addEventListener("pointermove", event => {
+      if (event.pointerId !== drawingPointer) return;
+      const bounds = annotation.getBoundingClientRect();
+      drawing.lineTo(
+        (event.clientX - bounds.left) * annotation.width / bounds.width,
+        (event.clientY - bounds.top) * annotation.height / bounds.height
+      );
+      drawing.stroke();
+    });
+    function endDrawing() { drawingPointer = null; }
+    annotation.addEventListener("pointerup", endDrawing);
+    annotation.addEventListener("pointercancel", endDrawing);
+
+    document.getElementById("chooseImage").addEventListener("click", () => imageInput.click());
+    imageInput.addEventListener("change", async () => {
+      const file = imageInput.files[0];
+      imageInput.value = "";
+      if (!file) return;
+      try {
+        loadImage(await prepareImage(file));
+        setStatus("");
+      } catch (error) {
+        setStatus(error.message || "图片读取失败。");
+      }
+    });
+
+    document.getElementById("shareScreen").addEventListener("click", async () => {
+      if (mediaStream) {
+        stopScreenShare();
+        hideStage();
+        return;
+      }
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        setStatus("当前浏览器不支持屏幕共享，请使用较新版本的 Chrome 或 Edge。");
+        return;
+      }
+      try {
+        mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        previewImage.hidden = true;
+        previewVideo.hidden = false;
+        previewVideo.srcObject = mediaStream;
+        await new Promise(resolve => {
+          previewVideo.onloadedmetadata = resolve;
+        });
+        configureAnnotation(previewVideo.videoWidth, previewVideo.videoHeight);
+        drawing.clearRect(0, 0, annotation.width, annotation.height);
+        document.getElementById("captureScreen").hidden = false;
+        document.getElementById("shareScreen").textContent = "停止共享";
+        mediaStream.getVideoTracks()[0].addEventListener("ended", hideStage, { once: true });
+        setStatus("屏幕共享仅用于截取你主动发送的画面；停止共享可随时结束。");
+      } catch (error) {
+        stopScreenShare();
+        setStatus(error.name === "NotAllowedError" ? "你取消了屏幕共享。" : "无法开启屏幕共享，请检查浏览器权限。");
+      }
+    });
+
+    document.getElementById("captureScreen").addEventListener("click", () => {
+      try {
+        const image = composeImage();
+        stopScreenShare();
+        loadImage(image);
+        setStatus("屏幕截图已准备好；可继续添加批注或直接发送。");
+      } catch (error) {
+        setStatus(error.message || "屏幕截图失败。");
+      }
+    });
+    document.getElementById("clearAnnotation").addEventListener("click", () => {
+      drawing.clearRect(0, 0, annotation.width, annotation.height);
+    });
+    document.getElementById("removeMedia").addEventListener("click", hideStage);
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const voiceButton = document.getElementById("voiceInput");
+    if (!SpeechRecognition) {
+      voiceButton.title = "当前浏览器不支持语音识别";
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = "zh-CN";
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.onresult = event => {
+        let transcript = "";
+        for (let index = event.resultIndex; index < event.results.length; index++) {
+          transcript += event.results[index][0].transcript;
+        }
+        messageInput.value = transcript;
+      };
+      recognition.onend = () => {
+        voiceButton.disabled = false;
+        voiceButton.textContent = "🎙️ 语音";
+      };
+      recognition.onerror = event => {
+        setStatus(event.error === "not-allowed" ? "麦克风权限未开启。" : "语音识别暂不可用，请检查网络或浏览器权限。");
+      };
+    }
+    voiceButton.addEventListener("click", () => {
+      if (!recognition) {
+        setStatus("当前浏览器不支持语音识别，请使用 Chrome 或 Edge。");
+        return;
+      }
+      try {
+        voiceButton.disabled = true;
+        voiceButton.textContent = "正在聆听…";
+        recognition.start();
+      } catch {
+        voiceButton.disabled = false;
+        voiceButton.textContent = "🎙️ 语音";
+        setStatus("语音识别正在运行，请稍后再试。");
+      }
+    });
+
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message && !pendingImage) {
+        setStatus("请先输入问题，或添加一张题目图片。");
+        return;
+      }
+      let image = pendingImage;
+      if (!stage.hidden) {
+        try {
+          image = composeImage();
+          pendingImage = image;
+          if (mediaStream) stopScreenShare();
+        } catch (error) {
+          setStatus(error.message || "屏幕截图失败。");
+          return;
+        }
+      }
+      const submittedText = message || "请帮我识别并讲解这张题目图片。";
+      addMessage("user", submittedText, image);
+      history.push({ role: "user", content: submittedText });
+      messageInput.value = "";
+      const sendButton = document.getElementById("sendButton");
+      sendButton.disabled = true;
+      setStatus("正在整理思路…");
+      const loading = addMessage("assistant", "正在思考…");
+      loading.classList.add("loading");
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            image: image || null,
+            history: history.slice(0, -1),
+            profile: {
+              grade: fields.grade.value,
+              subjects: fields.subjects.value,
+              goal: fields.goal.value
+            }
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `请求失败（HTTP ${response.status}）。`);
+        loading.textContent = result.answer;
+        loading.classList.remove("loading");
+        history.push({ role: "assistant", content: result.answer });
+        const speak = document.createElement("button");
+        speak.className = "secondary";
+        speak.type = "button";
+        speak.textContent = "🔊 朗读";
+        speak.style.marginTop = "10px";
+        speak.addEventListener("click", () => {
+          if (!window.speechSynthesis) {
+            setStatus("当前浏览器不支持语音朗读。");
+            return;
+          }
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(result.answer);
+          utterance.lang = "zh-CN";
+          window.speechSynthesis.speak(utterance);
+        });
+        loading.append(speak);
+        hideStage();
+        setStatus("");
+      } catch (error) {
+        loading.textContent = error.message || "发送失败，请检查网络后重试。";
+        loading.classList.remove("loading");
+        loading.style.color = "#b24848";
+        history.pop();
+        setStatus("回答失败；请检查网络和 API 配置后重试。");
+      } finally {
+        sendButton.disabled = false;
+        chat.scrollTop = chat.scrollHeight;
+        messageInput.focus();
+      }
+    }
+
+    document.getElementById("sendButton").addEventListener("click", sendMessage);
+    messageInput.addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+    document.getElementById("newChat").addEventListener("click", () => {
+      history.length = 0;
+      for (const message of chat.querySelectorAll(".message")) message.remove();
+      welcome.hidden = false;
+      hideStage();
+      setStatus("");
+      window.speechSynthesis?.cancel();
+      messageInput.focus();
+    });
+    for (const button of document.querySelectorAll(".suggestion")) {
+      button.addEventListener("click", () => {
+        messageInput.value = button.textContent;
+        messageInput.focus();
+      });
+    }
+  </script>
+</body>
+</html>

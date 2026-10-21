@@ -1,0 +1,122 @@
+# Sealos 部署配置（适用于 Sealos 云 / 自建 K8s 集群）
+# 用法：kubectl apply -f sealos.yaml
+#
+# 部署前请先做两件事：
+#   1. 构建并推送镜像，把下方 Deployment 的 image 替换成你的镜像地址。
+#   2. 把 Secret 里的 DEEPSEEK_API_KEY 换成你的真实密钥（不要提交真实密钥到 Git）。
+apiVersion: v1
+kind: Secret
+metadata:
+  name: xiaoban-tutor-secrets
+type: Opaque
+stringData:
+  # 生产环境建议改用命令注入，避免密钥写进文件：
+  #   kubectl create secret generic xiaoban-tutor-secrets \
+  #     --from-literal=DEEPSEEK_API_KEY=你的密钥
+  DEEPSEEK_API_KEY: "sk-c6443e9b234847698332d7f77ab49868"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xiaoban-tutor
+  labels:
+    app: xiaoban-tutor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xiaoban-tutor
+  template:
+    metadata:
+      labels:
+        app: xiaoban-tutor
+    spec:
+      containers:
+        - name: xiaoban-tutor
+          # 替换成你的镜像地址，例如：
+          #   docker.io/你的用户名/xiaoban-tutor:latest
+          #   registry.cn-hangzhou.aliyuncs.com/你的命名空间/xiaoban-tutor:latest
+          image: "hub.hzh.sealos.run/ns-hi0gk1xe/hometeacher"
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8000"
+            - name: DEEPSEEK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: xiaoban-tutor-secrets
+                  key: DEEPSEEK_API_KEY
+            # 非敏感配置，可按需覆盖
+            - name: DEEPSEEK_MODEL
+              value: "deepseek-flash"
+            - name: DEEPSEEK_BASE_URL
+              value: "https://api.deepseek.com"
+            - name: RATE_LIMIT_REQUESTS
+              value: "20"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: xiaoban-tutor
+  labels:
+    app: xiaoban-tutor
+spec:
+  type: ClusterIP
+  selector:
+    app: xiaoban-tutor
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: xiaoban-tutor
+  labels:
+    app: xiaoban-tutor
+  annotations:
+    # 使用 cert-manager 自动签发 HTTPS 证书（需集群已安装 cert-manager 并配置 ClusterIssuer）。
+    # 若使用 Sealos 云平台自动分配的域名，可去掉下面两行，HTTPS 由平台处理。
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "
+https://jsaaiikkwcvf.sealoshzh.site"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: xiaoban-tutor
+                port:
+                  number: 80
+
