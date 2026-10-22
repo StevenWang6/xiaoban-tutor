@@ -1,8 +1,8 @@
 name: build-and-push
 
-# 鍦ㄤ簯绔紙GitHub Actions锛夋瀯寤?Docker 闀滃儚骞舵帹閫佸埌 GitHub Container Registry (GHCR)銆?
-# 涓嶄緷璧栨湰鏈?Docker锛屾棤闇€棰濆闀滃儚浠撳簱璐﹀彿锛屼娇鐢ㄨ嚜鍔ㄦ敞鍏ョ殑 GITHUB_TOKEN銆?
-# 鏋勫缓浜х墿锛歡hcr.io/stevenwang6/xiaoban-tutor:latest
+# 在云端（GitHub Actions）构建 Docker 镜像并推送到 GitHub Container Registry (GHCR)。
+# 不依赖本机 Docker，无需额外镜像仓库账号，使用自动注入的 GITHUB_TOKEN。
+# 构建产物：ghcr.io/stevenwang6/xiaoban-tutor:latest
 
 on:
   push:

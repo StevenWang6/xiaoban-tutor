@@ -1,20 +1,11 @@
 # Sealos 部署配置（适用于 Sealos 云 / 自建 K8s 集群）
-# 用法：kubectl apply -f sealos.yaml
+# 部署前先创建 Secret，再应用本文件：
+#   kubectl create secret generic xiaoban-tutor-secrets --from-literal=DEEPSEEK_API_KEY='替换为真实密钥'
+#   kubectl apply -f sealos.yaml
 #
 # 部署前请先做两件事：
 #   1. 构建并推送镜像，把下方 Deployment 的 image 替换成你的镜像地址。
-#   2. 把 Secret 里的 DEEPSEEK_API_KEY 换成你的真实密钥（不要提交真实密钥到 Git）。
-apiVersion: v1
-kind: Secret
-metadata:
-  name: xiaoban-tutor-secrets
-type: Opaque
-stringData:
-  # 生产环境建议改用命令注入，避免密钥写进文件：
-  #   kubectl create secret generic xiaoban-tutor-secrets \
-  #     --from-literal=DEEPSEEK_API_KEY=你的密钥
-  DEEPSEEK_API_KEY: "sk-c6443e9b234847698332d7f77ab49868"
----
+#   2. 创建名为 xiaoban-tutor-secrets 的 Secret；不要把真实密钥写入或提交到 Git。
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,10 +24,8 @@ spec:
     spec:
       containers:
         - name: xiaoban-tutor
-          # 替换成你的镜像地址，例如：
-          #   docker.io/你的用户名/xiaoban-tutor:latest
-          #   registry.cn-hangzhou.aliyuncs.com/你的命名空间/xiaoban-tutor:latest
-          image: "hub.hzh.sealos.run/ns-hi0gk1xe/hometeacher"
+          # 镜像地址（由 GitHub Actions 自动构建并推送到 GHCR）：
+          image: "ghcr.io/stevenwang6/xiaoban-tutor:latest"
           ports:
             - containerPort: 8000
               protocol: TCP
@@ -108,8 +97,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: "
-https://jsaaiikkwcvf.sealoshzh.site"
+    - host: jsaaiikkwcvf.sealoshzh.site
       http:
         paths:
           - path: /
@@ -119,4 +107,3 @@ https://jsaaiikkwcvf.sealoshzh.site"
                 name: xiaoban-tutor
                 port:
                   number: 80
-
