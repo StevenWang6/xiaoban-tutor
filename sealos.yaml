@@ -26,6 +26,16 @@ spec:
         - name: xiaoban-tutor
           # 镜像地址（由 GitHub Actions 自动构建并推送到 GHCR）：
           image: "ghcr.io/stevenwang6/xiaoban-tutor:latest"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
           ports:
             - containerPort: 8000
               protocol: TCP
@@ -89,15 +99,16 @@ metadata:
   labels:
     app: xiaoban-tutor
   annotations:
-    # 使用 cert-manager 自动签发 HTTPS 证书（需集群已安装 cert-manager 并配置 ClusterIssuer）。
-    # 若使用 Sealos 云平台自动分配的域名，可去掉下面两行，HTTPS 由平台处理。
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    # Sealos 云（cloud.sealos.io）使用 nginx ingress + 平台通配证书自动处理 HTTPS，
+    # 无需 cert-manager。此处对齐集群内既有 Ingress 的注解写法。
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-body-size: "32m"
 spec:
-  ingressClassName: nginx
   rules:
-    - host: jsaaiikkwcvf.sealoshzh.site
+    - host: xiaoban-tutor.cloud.sealos.io
       http:
         paths:
           - path: /
@@ -107,3 +118,7 @@ spec:
                 name: xiaoban-tutor
                 port:
                   number: 80
+  tls:
+    - hosts:
+        - xiaoban-tutor.cloud.sealos.io
+      secretName: wildcard-cloud-sealos-io-cert
