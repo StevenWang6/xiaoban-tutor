@@ -12,6 +12,12 @@ metadata:
   name: xiaoban-tutor
   labels:
     app: xiaoban-tutor
+    cloud.sealos.io/app-deploy-manager: xiaoban-tutor
+  annotations:
+    deploy.cloud.sealos.io/minReplicas: "1"
+    deploy.cloud.sealos.io/maxReplicas: "1"
+    deploy.cloud.sealos.io/resize: "0"
+    originImageName: xiaoban-tutor
 spec:
   replicas: 1
   selector:
@@ -82,6 +88,7 @@ metadata:
   name: xiaoban-tutor
   labels:
     app: xiaoban-tutor
+    cloud.sealos.io/app-deploy-manager: xiaoban-tutor
 spec:
   type: ClusterIP
   selector:
@@ -98,6 +105,8 @@ metadata:
   name: xiaoban-tutor
   labels:
     app: xiaoban-tutor
+    cloud.sealos.io/app-deploy-manager: xiaoban-tutor
+    cloud.sealos.io/app-deploy-manager-domain: xiaoban-tutor
   annotations:
     # Sealos 云（cloud.sealos.io）使用 nginx ingress + 平台通配证书自动处理 HTTPS，
     # 无需 cert-manager。此处对齐集群内既有 Ingress 的注解写法。
